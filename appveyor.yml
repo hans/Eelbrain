@@ -7,11 +7,11 @@ os: Visual Studio 2015
 install:
   - copy "C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin\vcvars64.bat" "C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin\amd64\vcvarsamd64.bat"  # https://github.com/conda/conda-build/issues/1606
   - C:\Miniconda-x64\Scripts\activate.bat
-  - conda update --yes -n base conda
-  - conda env create -n condaenv --file env-dev.yml
+  - conda install --yes -c conda-forge -n base mamba
+  - mamba env create -n condaenv --file env-dev.yml
   - conda activate condaenv
   - python setup.py develop
-  - python -c "import mne; mne.datasets.testing.data_path()"
+#  - python -c "import mne; mne.datasets.testing.data_path()"
 
 build: false
 
