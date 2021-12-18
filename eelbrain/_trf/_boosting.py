@@ -32,6 +32,7 @@ from threading import Event, Thread
 from typing import Any, Callable, List, Literal, Union, Tuple, Sequence
 import warnings
 
+from numba import njit
 import numpy as np
 
 from .._config import CONFIG, mpc
@@ -40,7 +41,7 @@ from .._exceptions import OldVersionError
 from .._ndvar import _concatenate_values, convolve_jit, parallel_convolve, set_connectivity, set_parc
 from .._utils import PickleableDataClass, user_activity
 from .._utils.notebooks import tqdm
-from ._boosting_opt import l1, l2, generate_options, update_error
+from ._boosting_opt import l1, l2, update_error
 from .shared import PredictorData, DeconvolutionData, Split, Splits, merge_segments
 from ._fit_metrics import get_evaluators
 
@@ -1239,3 +1240,118 @@ def convolve(
             out[stop - pad_tail_n_times: stop] += pad_tail
         convolve_jit(h, x[:, start:stop], out[start:stop], h_i_start, h_i_stop)
     return out
+
+
+@njit
+def generate_options(
+        y_error: np.ndarray,  # (times,)
+        x: np.ndarray,  # (n_stims, n_times)
+        x_pads: np.ndarray,  # (n_stims,)
+        x_active: np.ndarray,  # for each predictor whether it is still used
+        indexes: np.ndarray,  # training segment indexes
+        i_start: int,  # kernel start index (time axis offset)
+        i_start_by_x: np.ndarray,  # (n_stims,) kernel start index
+        i_stop_by_x: np.ndarray, # (n_stims,) kernel stop index
+        error: int,  # ID of the error function (l1/l2)
+        delta: float,
+        # buffers
+        new_error: np.ndarray,  # (n_stims, n_times_trf)
+        new_sign: np.ndarray,  # (n_stims, n_times_trf)
+):
+    assert error in (1, 2)
+    n_stims = new_error.shape[0]
+    for i_stim in range(n_stims):
+        if x_active[i_stim] == 0:
+            continue
+        x_stim = x[i_stim]
+        x_pad = x_pads[i_stim]
+        for i_time in range(i_start_by_x[i_stim], i_stop_by_x[i_stim]):
+            # +/- delta
+            if error == 1:
+                e_add, e_sub = l1_for_delta(y_error, x_stim, x_pad, indexes, delta, i_time)
+            else:
+                e_add, e_sub = l2_for_delta(y_error, x_stim, x_pad, indexes, delta, i_time)
+
+            i_time -= i_start
+            if e_add > e_sub:
+                new_error[i_stim, i_time] = e_sub
+                new_sign[i_stim, i_time] = -1
+            else:
+                new_error[i_stim, i_time] = e_add
+                new_sign[i_stim, i_time] = 1
+
+
+@njit
+def l2_for_delta(
+        y_error: np.ndarray,
+        x: np.ndarray,
+        x_pad: float,  # pad x outside valid convolution area
+        indexes: np.ndarray,  # training segment indexes
+        delta: float,
+        shift: int,  # TRF element offset
+) -> (float, float):
+    e_add = e_sub = 0.
+    for seg_i in range(indexes.shape[0]):
+        seg_start = indexes[seg_i, 0]
+        seg_stop = indexes[seg_i, 1]
+        # determine valid convolution segment
+        conv_start = seg_start
+        conv_stop = seg_stop
+        if shift > 0:
+            conv_start += shift
+        elif shift < 0:
+            conv_stop += shift
+        # padding
+        d = delta * x_pad
+        # pre-
+        for i in range(seg_start, conv_start):
+            e_add += (y_error[i] - d) ** 2
+            e_sub += (y_error[i] + d) ** 2
+        # post-
+        for i in range(conv_stop, seg_stop):
+            e_add += (y_error[i] - d) ** 2
+            e_sub += (y_error[i] + d) ** 2
+        # part of the segment that is affected
+        for i in range(conv_start, conv_stop):
+            d = delta * x[i - shift]
+            e_add += (y_error[i] - d) ** 2
+            e_sub += (y_error[i] + d) ** 2
+    return e_add, e_sub
+
+
+@njit
+def l1_for_delta(
+        y_error: np.ndarray,
+        x: np.ndarray,
+        x_pad: float,  # pad x outside valid convolution area
+        indexes: np.ndarray,  # training segment indexes
+        delta: float,
+        shift: int,  # TRF element offset
+) -> (float, float):
+    e_add = e_sub = 0.
+    for seg_i in range(indexes.shape[0]):
+        seg_start = indexes[seg_i, 0]
+        seg_stop = indexes[seg_i, 1]
+        # determine valid convolution segment
+        conv_start = seg_start
+        conv_stop = seg_stop
+        if shift > 0:
+            conv_start += shift
+        elif shift < 0:
+            conv_stop += shift
+        # padding
+        d = delta * x_pad
+        # pre-
+        for i in range(seg_start, conv_start):
+            e_add += abs(y_error[i] - d)
+            e_sub += abs(y_error[i] + d)
+        # post-
+        for i in range(conv_stop, seg_stop):
+            e_add += abs(y_error[i] - d)
+            e_sub += abs(y_error[i] + d)
+        # valid segment
+        for i in range(conv_start, conv_stop):
+            d = delta * x[i - shift]
+            e_add += abs(y_error[i] - d)
+            e_sub += abs(y_error[i] + d)
+    return e_add, e_sub
