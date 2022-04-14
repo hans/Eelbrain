@@ -585,7 +585,7 @@ class Boosting:
 
         # progress bar
         n_splits = len(self.data.splits.splits)
-        pbar = tqdm(desc=f"Fitting models", total=n_y * n_splits, disable=CONFIG['tqdm'], leave=False)
+        pbar = tqdm(desc=f"Fitting models", total=n_y * n_splits, disable=CONFIG['tqdm'])
         self.t_fit_start = time.time()
 
         # boosting

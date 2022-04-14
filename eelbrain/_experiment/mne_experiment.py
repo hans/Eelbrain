@@ -2986,7 +2986,7 @@ class MneExperiment(FileTree):
         method, make_kw, apply_kw = self._inv_params()
         stcs = []
         invs = {}
-        for subject, evoked in tqdm(ds.zip('subject', 'evoked'), "Localize", ds.n_cases, leave=False):
+        for subject, evoked in tqdm(ds.zip('subject', 'evoked'), "Localize", ds.n_cases):
             # get inv
             if subject in invs:
                 inv = invs[subject]

@@ -568,7 +568,7 @@ class TreeModel:
                 disable = True
             # iteration
             with self._temporary_state:
-                for v_list in tqdm(product(*v_lists), progress_bar, n, disable=disable, leave=False):
+                for v_list in tqdm(product(*v_lists), progress_bar, n, disable=disable):
                     self._restore_state(discard_tip=False)
                     self.set(**dict(zip(iter_fields, v_list)))
                     if yield_str:
@@ -1106,7 +1106,7 @@ class FileTree(TreeModel):
         src_filenames, dst_filenames = self._find_files_with_target('Copy', temp, dst_root, inclusive, overwrite, confirm, state)
         if not src_filenames:
             return
-        for src, dst in tqdm(zip(src_filenames, dst_filenames), "Copying", len(src_filenames), leave=False):
+        for src, dst in tqdm(zip(src_filenames, dst_filenames), "Copying", len(src_filenames)):
             dirname = os.path.dirname(dst)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
@@ -1149,7 +1149,7 @@ class FileTree(TreeModel):
         src_filenames, dst_filenames = self._find_files_with_target('Move', temp, dst_root, inclusive, overwrite, confirm, state)
         if not src_filenames:
             return
-        for src, dst in tqdm(zip(src_filenames, dst_filenames), "Moving", len(src_filenames), leave=False):
+        for src, dst in tqdm(zip(src_filenames, dst_filenames), "Moving", len(src_filenames)):
             dirname = os.path.dirname(dst)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
