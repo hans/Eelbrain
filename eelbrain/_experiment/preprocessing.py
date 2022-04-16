@@ -465,8 +465,8 @@ class RawFilter(CachedRawPipe):
     def as_dict(self, args: Sequence[str] = ()):
         return CachedRawPipe.as_dict(self, [*args, 'args', 'kwargs'])
 
-    def filter_ndvar(self, ndvar):
-        return filter_data(ndvar, *self.args, **self._use_kwargs)
+    def filter_ndvar(self, ndvar, **kwargs):
+        return filter_data(ndvar, *self.args, **self._use_kwargs, **kwargs)
 
     def _make(self, subject, recording):
         raw = self.source.load(subject, recording, preload=True)
