@@ -531,14 +531,23 @@ def find_fig_vlims(plots, vmax=None, vmin=None, cmaps=None):
     return vlims
 
 
-def find_vlim_args(ndvar, vmin=None, vmax=None):
+def find_vlim_args(
+        ndvar: NDVar,
+        vmin: float = None,
+        vmax: float = None,
+        unmask: bool = True,
+):
     if vmax is None:
         vmax = ndvar.info.get('vmax', None)
         if vmin is None:
             vmin = ndvar.info.get('vmin', None)
 
     if vmax is None or vmin is None:
-        xmax = np.nanmax(ndvar.x)
+        if unmask and np.ma.isMaskedArray(ndvar.x):
+            data = ndvar.x.data
+        else:
+            data = ndvar.x
+        xmax = np.nanmax(data)
         if np.ma.isMaskedArray(xmax):
             xmax = xmax.data
         xmin = np.nanmin(ndvar.x)
