@@ -6265,8 +6265,13 @@ class MneExperiment(FileTree):
         """
         if subject is not None:
             if 'group' not in state:
-                state['subject'] = subject
-                subject = None
+                if subject not in self._field_values['subject'] and subject in self._groups['all']:
+                    old = self.get('group')
+                    print(f"group: {old} --> all ({subject} not in {old})")
+                    state['group'] = 'all'
+                else:
+                    state['subject'] = subject
+                    subject = None
         FileTree.set(self, match, allow_asterisk, **state)
         if subject is not None:
             FileTree.set(self, match, allow_asterisk, subject=subject)
