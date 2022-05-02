@@ -159,13 +159,21 @@ def parse():
         url = raw_entries[result_id]['link']
         journal = entry.fields.get('journal', '').lower()
         doi = None
-        if journal == 'biorxiv':
+        if entry.type == 'phdthesis':
+            pass
+        elif journal == 'biorxiv':
             if match := re.match(r"https://www\.biorxiv\.org/content/([\d./]+)\.abstract", url):
                 doi = match.group(1)
             elif match := re.match(r"https://www\.biorxiv\.org/content/biorxiv/early/([\d./]+)\.full.pdf", url):
                 pass  # DOI unknown
             else:
                 raise RuntimeError(f"Can't identify DOI from {url=}")
+        elif not journal:
+            if entry.fields.get('publisher') == 'PsyArXiv':
+                entry.fields['journal'] = '{PsyArXiv}'
+            else:
+                entry.fields['journal'] = '???'
+                print('Warning: missing journal')
         if doi:
             if doi in BIORXIV_OBSOLETE:
                 continue
