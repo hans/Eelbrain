@@ -3,7 +3,6 @@ import urllib.parse
 
 import wx
 import wx.html
-import wx.html2
 
 from .frame import EelbrainFrame
 
@@ -38,6 +37,8 @@ class HTMLFrame(EelbrainFrame):
 class HTML2Frame(EelbrainFrame):
 
     def __init__(self, parent, title, text, **kwargs):
+        import wx.html2
+
         EelbrainFrame.__init__(self, parent, title=title, **kwargs)
         self.webview = wx.html2.WebView.New(self)
         self.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnNavigating, self.webview)
