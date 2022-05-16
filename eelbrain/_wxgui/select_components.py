@@ -1497,10 +1497,11 @@ def select_components(
     path
         Path to the ICA file.
     data
-        Raw data, or :class:`Dataset` with epochs to use for displying
-        component time course during source selection. If provided as Dataset,
-        ``data['epochs']`` should contain an mne-python ``Epochs`` object).
-        Optionally, ``data['index']`` can provide indexes to display for epochs
+        Data to use for displying component time course during source selection.
+        Can be specified as :class:`mne.io.Raw` object with continuous data, or
+        as :class:`Dataset` with epoched data (``data['epochs']`` should contain
+        an :class:`mne.Epochs` object).
+        Optionally, ``data['index']`` can provide labels to display for epochs
         (the default is ``range(n_epochs)``).
         Further :class:`Factor` can be used to plot condition averages.
     sysname
