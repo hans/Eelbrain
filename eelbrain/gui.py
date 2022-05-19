@@ -1,5 +1,13 @@
 """Eelbrain GUIs"""
-from ._wxgui.select_components import select_components
+
+import logging
+L = logging.getLogger(__name__)
+
+try:
+    from ._wxgui.select_components import select_components
+except ImportError as e:
+    L.warn("wx import failed; running headless. expect errors for GUI invocations")
+    select_components = None
 
 
 def run(block=False):
